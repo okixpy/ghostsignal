@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GhostSignal · Créer un compte</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050507;
+      --surface: #0d0d12;
+      --border: #1a1a2e;
+      --accent: #00ff88;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --error: #ff3366;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 20%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .auth-container {
+      width: 90%; max-width: 440px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 32px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1.4rem;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    .logo-dot {
+      width: 10px; height: 10px;
+      background: var(--accent); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 40px;
+      position: relative;
+    }
+
+    .auth-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .auth-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem; font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .auth-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    /* TABS */
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent; border: none;
+      padding: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* FORM */
+    .form-group { margin-bottom: 20px; }
+
+    .form-label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus { border-color: var(--accent); }
+    .form-input::placeholder { color: var(--muted); }
+
+    .form-input.error { border-color: var(--error); }
+
+    .plan-selector {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-bottom: 24px;
+    }
+
+    .plan-option {
+      border: 1px solid var(--border);
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .plan-option:hover { border-color: rgba(0,255,136,0.3); }
+    .plan-option.selected { border-color: var(--accent); background: rgba(0,255,136,0.05); }
+
+    .plan-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem; font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .plan-price {
+      font-size: 0.7rem; color: var(--accent);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 16px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.9rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      cursor: pointer;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-submit:hover { background: #fff; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: rgba(255,51,102,0.1);
+      border: 1px solid rgba(255,51,102,0.3);
+      padding: 12px 16px;
+      font-size: 0.75rem;
+      color: var(--error);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .success-msg {
+      background: rgba(0,255,136,0.1);
+      border: 1px solid rgba(0,255,136,0.3);
+      padding: 12px 16px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 24px 0;
+      font-size: 0.65rem; color: var(--muted);
+    }
+
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--border);
+    }
+
+    .btn-google {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 13px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .btn-google:hover { border-color: var(--accent); color: var(--accent); }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.7rem; color: var(--muted);
+    }
+
+    .auth-footer a { color: var(--accent); text-decoration: none; }
+
+    /* LOADING SPINNER */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="auth-container">
+  <div class="auth-logo">
+    <div class="logo-dot"></div>
+    GhostSignal
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="tab-btn active" onclick="switchTab('signup')">Créer un compte</button>
+      <button class="tab-btn" onclick="switchTab('signin')">Se connecter</button>
+    </div>
+
+    <div id="errorMsg" class="error-msg"></div>
+    <div id="successMsg" class="success-msg"></div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signupForm">
+      <div class="form-group">
+        <label class="form-label">Nom ou pseudo</label>
+        <input type="text" class="form-input" id="signupName" placeholder="TonNom" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="signupEmail" placeholder="toi@email.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" class="form-input" id="signupPassword" placeholder="••••••••" />
+      </div>
+
+      <div class="form-label" style="margin-bottom: 10px;">Choisis ton plan</div>
+      <div class="plan-selector">
+        <div class="plan-option" onclick="selectPlan(this, 'starter')">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price">9€/mois</div>
+        </div>
+        <div class="plan-option selected" onclick="selectPlan(this, 'creator')">
+          <div class="plan-name">Creator</div>
+          <div class="plan-price">19€/mois</div>
+        </div>
+        <div class="plan-option" onclick="selectPlan(this, 'pro')">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">49€/mois</div>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="signupBtn" onclick="handleSignup()">
+        Créer mon compte →
+      </button>
+
+      <div class="divider">ou</div>
+
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continuer avec Google
+      </button>
+    </div>
+
+    <!-- SIGNIN FORM -->
+    <div id="signinForm" style="display: none;">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="signinEmail" placeholder="toi@email.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" class="form-input" id="signinPassword" placeholder="••••••••" />
+      </div>
+
+      <button class="btn-submit" id="signinBtn" onclick="handleSignin()">
+        Se connecter →
+      </button>
+
+      <div class="divider">ou</div>
+
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continuer avec Google
+      </button>
+
+      <p style="text-align: center; margin-top: 16px; font-size: 0.7rem;">
+        <a href="/reset-password" style="color: var(--muted); text-decoration: none;">Mot de passe oublié ?</a>
+      </p>
+    </div>
+
+  </div>
+
+  <div class="auth-footer">
+    En créant un compte, tu acceptes nos
+    <a href="/terms">CGU</a> et notre
+    <a href="/privacy">politique de confidentialité</a>.
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // SUPABASE CONFIG — Replace with your keys
+  // ============================================================
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  let selectedPlan = 'creator';
+
+  // Pre-fill email from URL params
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('email')) {
+    document.getElementById('signupEmail').value = params.get('email');
+  }
+  if (params.get('plan')) {
+    const planParam = params.get('plan');
+    document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('selected'));
+    document.querySelectorAll('.plan-option').forEach(o => {
+      if (o.querySelector('.plan-name').textContent.toLowerCase() === planParam) {
+        o.classList.add('selected');
+        selectedPlan = planParam;
+      }
+    });
+  }
+
+  // ============================================================
+  // UI HELPERS
+  // ============================================================
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+    document.getElementById('signinForm').style.display = tab === 'signin' ? 'block' : 'none';
+    clearMessages();
+  }
+
+  function selectPlan(el, plan) {
+    document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPlan = plan;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+    document.getElementById('successMsg').style.display = 'none';
+  }
+
+  function showSuccess(msg) {
+    const el = document.getElementById('successMsg');
+    el.textContent = '✓ ' + msg;
+    el.style.display = 'block';
+    document.getElementById('errorMsg').style.display = 'none';
+  }
+
+  function clearMessages() {
+    document.getElementById('errorMsg').style.display = 'none';
+    document.getElementById('successMsg').style.display = 'none';
+  }
+
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? '<span class="spinner"></span> Chargement...'
+      : btnId === 'signupBtn' ? 'Créer mon compte →' : 'Se connecter →';
+  }
+
+  // ============================================================
+  // SIGNUP — Calls your Node.js backend
+  // ============================================================
+  async function handleSignup() {
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+
+    if (!name || !email || !password) { showError('Tous les champs sont requis.'); return; }
+    if (password.length < 8) { showError('Mot de passe minimum 8 caractères.'); return; }
+
+    setLoading('signupBtn', true);
+    clearMessages();
+
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, plan: selectedPlan }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+
+      // If free trial → redirect to dashboard
+      // If paid plan → redirect to Stripe
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        // Store user session
+        localStorage.setItem('gs_user', JSON.stringify({ name, email, plan: selectedPlan, token: data.token }));
+        showSuccess('Compte créé ! Redirection...');
+        setTimeout(() => window.location.href = '/dashboard', 1200);
+      }
+
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading('signupBtn', false);
+    }
+  }
+
+  // ============================================================
+  // SIGNIN
+  // ============================================================
+  async function handleSignin() {
+    const email = document.getElementById('signinEmail').value.trim();
+    const password = document.getElementById('signinPassword').value;
+
+    if (!email || !password) { showError('Email et mot de passe requis.'); return; }
+
+    setLoading('signinBtn', true);
+    clearMessages();
+
+    try {
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Identifiants incorrects');
+
+      localStorage.setItem('gs_user', JSON.stringify(data.user));
+      showSuccess('Connexion réussie ! Redirection...');
+      setTimeout(() => window.location.href = '/dashboard', 1000);
+
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading('signinBtn', false);
+    }
+  }
+
+  // ============================================================
+  // GOOGLE OAUTH
+  // ============================================================
+  async function signInWithGoogle() {
+    window.location.href = '/api/auth/google';
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const signupVisible = document.getElementById('signupForm').style.display !== 'none';
+      if (signupVisible) handleSignup();
+      else handleSignin();
+    }
+  });
+</script>
+</body>
+</html>

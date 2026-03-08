@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GhostSignal · Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050507;
+      --surface: #0d0d12;
+      --surface2: #111118;
+      --border: #1a1a2e;
+      --accent: #00ff88;
+      --accent2: #ff3366;
+      --accent3: #7c3aed;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      display: flex; min-height: 100vh;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 240px; min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      display: flex; flex-direction: column;
+      position: fixed; left: 0; top: 0; bottom: 0;
+      z-index: 50;
+    }
+
+    .sidebar-logo {
+      padding: 0 24px 32px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1.1rem;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-dot {
+      width: 8px; height: 8px;
+      background: var(--accent); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+
+    .sidebar-nav {
+      padding: 24px 0;
+      flex: 1;
+    }
+
+    .nav-section {
+      padding: 0 16px;
+      margin-bottom: 8px;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 24px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: var(--text);
+      background: rgba(255,255,255,0.03);
+      border-left-color: var(--accent);
+    }
+
+    .nav-item.active { color: var(--accent); }
+
+    .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-info {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .user-avatar {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 0.8rem;
+      color: #000;
+    }
+
+    .user-name { font-size: 0.75rem; font-weight: 700; }
+    .user-plan {
+      font-size: 0.6rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* MAIN CONTENT */
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      padding: 0;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--surface);
+      position: sticky; top: 0; z-index: 40;
+    }
+
+    .topbar-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 1rem;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(0,255,136,0.1);
+      border: 1px solid rgba(0,255,136,0.2);
+      padding: 6px 12px;
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    .blink-dot {
+      width: 6px; height: 6px;
+      background: var(--accent); border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* CONTENT AREA */
+    .content { padding: 32px; }
+
+    /* STATS ROW */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem; font-weight: 800;
+    }
+
+    .stat-value.green { color: var(--accent); }
+    .stat-value.red { color: var(--accent2); }
+
+    .stat-delta {
+      font-size: 0.65rem;
+      color: var(--accent);
+      margin-top: 4px;
+    }
+
+    /* TRENDS TABLE */
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 700;
+    }
+
+    .filter-row {
+      display: flex; gap: 8px;
+    }
+
+    .filter-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* TREND CARDS */
+    .trends-list {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .trend-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 20px;
+      align-items: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .trend-card:hover {
+      border-color: rgba(0,255,136,0.2);
+      background: rgba(0,255,136,0.02);
+    }
+
+    .score-circle {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+      border: 2px solid var(--accent);
+      position: relative;
+    }
+
+    .score-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem; font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .score-label {
+      font-size: 0.5rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .trend-info { min-width: 0; }
+
+    .trend-meta {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .platform-tag {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .niche-tag {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent3);
+    }
+
+    .trend-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      margin-bottom: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .trend-desc {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .trend-hashtags {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .hashtag {
+      font-size: 0.6rem;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    .trend-actions {
+      display: flex; flex-direction: column; gap: 8px;
+      align-items: flex-end;
+    }
+
+    .btn-script {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .btn-script:hover { background: #fff; }
+
+    .btn-save {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 7px 16px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .btn-save:hover { border-color: var(--accent); color: var(--accent); }
+
+    .trend-velocity {
+      margin-top: 4px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.65rem; color: var(--muted);
+    }
+
+    .vel-bar {
+      width: 60px; height: 3px;
+      background: var(--border);
+      position: relative;
+    }
+
+    .vel-fill {
+      position: absolute; inset-block: 0; left: 0;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(5,5,7,0.9);
+      z-index: 200;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      width: 90%; max-width: 680px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 40px;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute; top: 20px; right: 20px;
+      background: transparent; border: none;
+      color: var(--muted); font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem; font-weight: 800;
+      margin-bottom: 24px;
+    }
+
+    .script-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 24px;
+      font-size: 0.78rem;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+    }
+
+    .script-box .hook { color: var(--accent); font-weight: 700; }
+    .script-box .cta { color: var(--accent2); }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      display: none;
+    }
+
+    .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem; font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .empty-desc { font-size: 0.78rem; color: var(--muted); }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .trend-card { grid-template-columns: 60px 1fr; }
+      .trend-actions { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .content { padding: 16px; }
+    }
+
+    /* UPGRADE BANNER */
+    .upgrade-banner {
+      background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(124,58,237,0.1));
+      border: 1px solid rgba(0,255,136,0.2);
+      padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .upgrade-text { font-size: 0.78rem; }
+    .upgrade-text strong { color: var(--accent); }
+
+    .btn-upgrade {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 20px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-upgrade:hover { background: #fff; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-dot"></div>
+    GhostSignal
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section" style="margin-top: 16px;">Analyse</div>
+    <a class="nav-item active" href="/dashboard">
+      <span class="nav-icon">⚡</span> Signaux viraux
+    </a>
+    <a class="nav-item" href="/dashboard/saved">
+      <span class="nav-icon">★</span> Sauvegardés
+    </a>
+    <a class="nav-item" href="/dashboard/scripts">
+      <span class="nav-icon">✦</span> Mes scripts
+    </a>
+
+    <div class="nav-section" style="margin-top: 24px;">Paramètres</div>
+    <a class="nav-item" href="/dashboard/niches">
+      <span class="nav-icon">◎</span> Mes niches
+    </a>
+    <a class="nav-item" href="/dashboard/alerts">
+      <span class="nav-icon">◉</span> Alertes
+    </a>
+    <a class="nav-item" href="/dashboard/subscription">
+      <span class="nav-icon">◈</span> Abonnement
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar" id="userInitial">U</div>
+      <div>
+        <div class="user-name" id="userName">Utilisateur</div>
+        <div class="user-plan" id="userPlan">Creator</div>
+      </div>
+    </div>
+    <button onclick="logout()" style="width: 100%; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px; font-family: Space Mono, monospace; font-size: 0.7rem; cursor: pointer;">Déconnexion</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <span class="topbar-title">Signaux Viraux</span>
+    <div class="topbar-right">
+      <div class="live-badge">
+        <div class="blink-dot"></div>
+        Live · mis à jour il y a 3 min
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- UPGRADE BANNER (shown for starter plan) -->
+    <div class="upgrade-banner" id="upgradeBanner" style="display: none;">
+      <div class="upgrade-text">
+        Tu utilises le plan <strong>Starter</strong> (5 trends/semaine). Passe à <strong>Creator</strong> pour des tendances illimitées + scripts IA.
+      </div>
+      <button class="btn-upgrade" onclick="window.location.href='/dashboard/subscription'">Upgrader →</button>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Signaux détectés</div>
+        <div class="stat-value green" id="statSignals">47</div>
+        <div class="stat-delta">↑ +12 aujourd'hui</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Score moyen</div>
+        <div class="stat-value" id="statScore">84</div>
+        <div class="stat-delta" style="color: var(--muted)">↑ +3 pts vs hier</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Scripts générés</div>
+        <div class="stat-value" id="statScripts">12</div>
+        <div class="stat-delta">Cette semaine</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tendances sauvées</div>
+        <div class="stat-value" id="statSaved">8</div>
+        <div class="stat-delta" style="color: var(--muted)">Total</div>
+      </div>
+    </div>
+
+    <!-- FILTERS + TRENDS -->
+    <div class="section-header">
+      <div class="section-title">Tendances en temps réel</div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter(this, 'all')">Tout</button>
+        <button class="filter-btn" onclick="setFilter(this, 'tiktok')">TikTok</button>
+        <button class="filter-btn" onclick="setFilter(this, 'instagram')">Instagram</button>
+        <button class="filter-btn" onclick="setFilter(this, 'youtube')">YouTube</button>
+      </div>
+    </div>
+
+    <div class="trends-list" id="trendsList">
+      <!-- Trends injected by JS -->
+    </div>
+
+  </div>
+</main>
+
+<!-- SCRIPT MODAL -->
+<div class="modal-overlay" id="scriptModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modalTrendName">Trend Name</div>
+
+    <div style="font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px;">Script généré par IA</div>
+
+    <div class="script-box" id="scriptContent">
+      <span class="hook">HOOK (0-3 sec) :</span>
+      "Tu savais pas ça sur [sujet] et c'est pour ça tu stagne..."
+
+      <span class="hook">INTRO (3-8 sec) :</span>
+      Je vais te montrer le secret que utilisent les créateurs qui font x10 en 30 jours.
+
+      <span class="hook">CORPS (8-35 sec) :</span>
+      Point 1 : [contenu valeur]
+      Point 2 : [contenu valeur]
+      Point 3 : [contenu valeur]
+
+      <span class="cta">CTA (35-45 sec) :</span>
+      "Sauvegarde cette vidéo, tu me remercieras dans 30 jours. Follow pour la suite →"
+    </div>
+
+    <div style="font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;">Hashtags recommandés</div>
+    <div id="modalHashtags" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;"></div>
+
+    <button class="btn-script" style="width: 100%;" onclick="copyScript()">Copier le script</button>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // MOCK DATA — Replace with real Supabase API calls
+  // ============================================================
+  const TRENDS_DATA = [
+    {
+      id: 1, score: 96, platform: 'TikTok', niche: 'Fitness',
+      name: 'POV: 30 Day Glow Up Challenge',
+      desc: 'Format transformation before/after avec overlay texte. Croissance +340% en 18h. Niche fitness/beauté.',
+      hashtags: ['#glowup', '#transformation', '#30daychallenge', '#fitness', '#beforeafter'],
+      velocity: 96,
+      script: `HOOK (0-3 sec) :
+"Dans 30 jours, personne te reconnaîtra — voilà mon challenge..."
+
+INTRO (3-8 sec) :
+Tu vas me voir passer de [état actuel] à [état objectif]. Je filme tout.
+
+CORPS (8-35 sec) :
+Jour 1 : [action concrète]
+Jour 15 : [progression visible]
+Jour 30 : [résultat final choc]
+
+CTA (35-45 sec) :
+"Follow pour voir le résultat au jour 30 → je poste chaque semaine"`,
+    },
+    {
+      id: 2, score: 89, platform: 'Instagram', niche: 'Business',
+      name: 'Silent CEO Morning Vlog',
+      desc: 'Vlog silencieux routine matinale business. Audio lo-fi ambiant. Croissance +280% sur Reels cette semaine.',
+      hashtags: ['#ceolife', '#morningroutine', '#silentmotivation', '#entrepreneur', '#vlog'],
+      velocity: 89,
+      script: `HOOK (0-3 sec) :
+[Pas de parole — image : réveil 5h00, café, ambiance lo-fi]
+
+INTRO (3-8 sec) :
+[Texte overlay] : "Ma routine de CEO avant que le monde se réveille"
+
+CORPS (8-35 sec) :
+→ 5h00 : réveil [image]
+→ 5h15 : sport / méditation [image]
+→ 6h00 : travail deep focus [image]
+→ 7h30 : petit-déjeuner [image]
+
+CTA (35-45 sec) :
+[Texte overlay] : "Save for inspo → follow pour la suite"`,
+    },
+    {
+      id: 3, score: 82, platform: 'YouTube', niche: 'Finance',
+      name: 'Hidden Gem #[n] — Crypto/Invest',
+      desc: 'Format "secret révélé" avec compteur qui monte. Tension narrative maximale. Forte rétention.',
+      hashtags: ['#crypto', '#invest', '#passiveincome', '#hiddenGem', '#finance'],
+      velocity: 82,
+      script: `HOOK (0-3 sec) :
+"Ce crypto va x10 et 99% des gens ne le savent pas encore..."
+
+INTRO (3-8 sec) :
+J'analyse les marchés depuis 5 ans. Voilà le signal que je vois en ce moment.
+
+CORPS (8-35 sec) :
+Indicateur 1 : [donnée concrète]
+Indicateur 2 : [comparaison avec 2020/2021]
+Indicateur 3 : [catalyst potentiel]
+
+CTA (35-45 sec) :
+"Like si tu veux que je continue à partager ces analyses. Abonne-toi, je poste chaque lundi."`,
+    },
+    {
+      id: 4, score: 78, platform: 'TikTok', niche: 'Food',
+      name: '60-second Recipe Hack',
+      desc: 'Recette ultra-rapide filmée en accéléré. Format "satisfying". Très fort sur FR/BE/CA.',
+      hashtags: ['#recette', '#foodhack', '#recipe', '#cooking', '#tiktokfood'],
+      velocity: 78,
+      script: `HOOK (0-3 sec) :
+"La recette que tu cherches depuis toujours — en 60 secondes"
+
+INTRO (3-8 sec) :
+3 ingrédients. 60 secondes. Résultat incroyable.
+
+CORPS (8-35 sec) :
+Étape 1 → [action rapide + texte overlay]
+Étape 2 → [action rapide]
+Étape 3 → [résultat final satisfaisant]
+
+CTA (35-45 sec) :
+"Sauvegarde pour essayer ce week-end 🔖"`,
+    },
+    {
+      id: 5, score: 74, platform: 'Instagram', niche: 'Fashion',
+      name: 'Outfit Formula Reveal',
+      desc: '"Formula" outfit qui fonctionne toujours. Format éducatif + esthétique. Très fort sur les 18-28 ans.',
+      hashtags: ['#outfitformula', '#stylecheck', '#fashion', '#ootd', '#howtostyle'],
+      velocity: 74,
+      script: `HOOK (0-3 sec) :
+"La formula outfit que personne ne t'apprend mais qui marche à chaque fois"
+
+INTRO (3-8 sec) :
+Pièce statement + neutre + texture = combo parfait.
+
+CORPS (8-35 sec) :
+Pièce 1 : [description + pourquoi ça marche]
+Pièce 2 : [description + combinaison]
+Résultat : [look final avec overlay]
+
+CTA (35-45 sec) :
+"Save si utile → j'en poste une nouvelle chaque semaine"`,
+    },
+  ];
+
+  let currentFilter = 'all';
+  let currentScript = null;
+
+  // ============================================================
+  // RENDER TRENDS
+  // ============================================================
+  function renderTrends(filter = 'all') {
+    const list = document.getElementById('trendsList');
+    const filtered = filter === 'all'
+      ? TRENDS_DATA
+      : TRENDS_DATA.filter(t => t.platform.toLowerCase() === filter);
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-state" style="display:block;"><div class="empty-icon">📡</div><div class="empty-title">Aucun signal dans cette catégorie</div><div class="empty-desc">Essaie un autre filtre ou reviens plus tard.</div></div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(t => `
+      <div class="trend-card" onclick="openScript(${t.id})">
+        <div class="score-circle">
+          <span class="score-num">${t.score}</span>
+          <span class="score-label">VIRAL</span>
+        </div>
+        <div class="trend-info">
+          <div class="trend-meta">
+            <span class="platform-tag">${t.platform}</span>
+            <span class="niche-tag">${t.niche}</span>
+          </div>
+          <div class="trend-name">${t.name}</div>
+          <div class="trend-desc">${t.desc}</div>
+          <div class="trend-hashtags">
+            ${t.hashtags.slice(0,3).map(h => `<span class="hashtag">${h}</span>`).join('')}
+          </div>
+          <div class="trend-velocity">
+            <span>Vélocité</span>
+            <div class="vel-bar"><div class="vel-fill" style="width:${t.velocity}%"></div></div>
+            <span>${t.velocity}%</span>
+          </div>
+        </div>
+        <div class="trend-actions">
+          <button class="btn-script" onclick="event.stopPropagation(); openScript(${t.id})">Script IA →</button>
+          <button class="btn-save" onclick="event.stopPropagation(); saveAlert(${t.id})">★ Sauver</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function setFilter(btn, filter) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = filter;
+    renderTrends(filter);
+  }
+
+  // ============================================================
+  // SCRIPT MODAL
+  // ============================================================
+  function openScript(id) {
+    const trend = TRENDS_DATA.find(t => t.id === id);
+    if (!trend) return;
+    currentScript = trend.script;
+
+    document.getElementById('modalTrendName').textContent = trend.name;
+    document.getElementById('scriptContent').textContent = trend.script;
+    document.getElementById('modalHashtags').innerHTML = trend.hashtags
+      .map(h => `<span style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);padding:4px 10px;font-size:0.65rem;color:var(--accent);">${h}</span>`)
+      .join('');
+
+    document.getElementById('scriptModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('scriptModal').classList.remove('open');
+  }
+
+  function copyScript() {
+    if (!currentScript) return;
+    navigator.clipboard.writeText(currentScript).then(() => {
+      const btn = document.querySelector('#scriptModal .btn-script');
+      btn.textContent = '✓ Copié !';
+      setTimeout(() => btn.textContent = 'Copier le script', 2000);
+    });
+  }
+
+  function saveAlert(id) {
+    const btn = event.target;
+    btn.textContent = '★ Sauvé';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+  }
+
+  // Close modal on overlay click
+  document.getElementById('scriptModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('scriptModal')) closeModal();
+  });
+
+  // ============================================================
+  // AUTH CHECK (Simple — replace with Supabase auth)
+  // ============================================================
+  function checkAuth() {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) {
+      window.location.href = '/signin';
+      return;
+    }
+    document.getElementById('userName').textContent = user.name || user.email;
+    document.getElementById('userInitial').textContent = (user.name || user.email)[0].toUpperCase();
+    document.getElementById('userPlan').textContent = user.plan || 'Starter';
+
+    if (user.plan === 'starter') {
+      document.getElementById('upgradeBanner').style.display = 'flex';
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('gs_user');
+    window.location.href = '/';
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  checkAuth();
+  renderTrends();
+</script>
+</body>
+</html>

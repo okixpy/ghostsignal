@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GhostSignal AI — Détecte les trends avant qu'elles explosent</title>
+  <meta name="description" content="Radar de viralité IA. Reçois les tendances TikTok, Instagram et YouTube avant qu'elles deviennent virales. Scripts inclus." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050507;
+      --surface: #0d0d12;
+      --border: #1a1a2e;
+      --accent: #00ff88;
+      --accent2: #ff3366;
+      --accent3: #7c3aed;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --glow: 0 0 40px rgba(0, 255, 136, 0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      overflow-x: hidden;
+    }
+
+    /* NOISE TEXTURE */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.4;
+    }
+
+    /* GRID BACKGROUND */
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 20px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      background: rgba(5, 5, 7, 0.8);
+      backdrop-filter: blur(20px);
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1.3rem;
+      letter-spacing: -0.02em;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .logo-dot {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .btn-nav {
+      background: var(--accent); color: #000 !important;
+      padding: 10px 20px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase !important;
+      font-size: 0.75rem !important;
+      border: none; cursor: pointer;
+      transition: all 0.2s !important;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+
+    .btn-nav:hover {
+      background: #fff !important;
+      box-shadow: 0 0 30px rgba(0,255,136,0.5) !important;
+    }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      text-align: center;
+      padding: 120px 40px 80px;
+      position: relative; z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,255,136,0.08);
+      border: 1px solid rgba(0,255,136,0.2);
+      padding: 8px 16px;
+      font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 32px;
+      animation: fadeInUp 0.6s ease both;
+    }
+
+    .live-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.6s 0.1s ease both;
+    }
+
+    h1 .highlight {
+      color: var(--accent);
+      position: relative;
+      display: inline-block;
+    }
+
+    h1 .highlight::after {
+      content: '';
+      position: absolute; bottom: -4px; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .hero-sub {
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+      animation: fadeInUp 0.6s 0.2s ease both;
+    }
+
+    .hero-cta {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeInUp 0.6s 0.3s ease both;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      padding: 18px 36px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.9rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      text-decoration: none;
+      border: none; cursor: pointer;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .btn-primary:hover {
+      background: #fff;
+      box-shadow: 0 0 50px rgba(0,255,136,0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      padding: 17px 36px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.9rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* STATS TICKER */
+    .ticker {
+      margin-top: 80px;
+      display: flex; gap: 60px;
+      animation: fadeInUp 0.6s 0.4s ease both;
+      flex-wrap: wrap; justify-content: center;
+    }
+
+    .ticker-item {
+      text-align: center;
+    }
+
+    .ticker-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.5rem; font-weight: 800;
+      color: var(--accent);
+      display: block;
+    }
+
+    .ticker-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* SIGNAL PREVIEW */
+    .signal-preview {
+      padding: 0 40px 100px;
+      position: relative; z-index: 1;
+    }
+
+    .preview-title {
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+
+    .signals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .signal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .signal-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .signal-card:hover::before { opacity: 1; }
+    .signal-card:hover { border-color: rgba(0,255,136,0.2); }
+
+    .signal-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .signal-platform {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .signal-score {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem; font-weight: 800;
+      color: var(--accent);
+    }
+
+    .signal-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .signal-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .signal-tags {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+
+    .tag {
+      background: rgba(0,255,136,0.08);
+      border: 1px solid rgba(0,255,136,0.15);
+      padding: 4px 10px;
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .signal-velocity {
+      margin-top: 16px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.7rem; color: var(--muted);
+    }
+
+    .velocity-bar {
+      flex: 1; height: 3px;
+      background: var(--border);
+      position: relative;
+    }
+
+    .velocity-fill {
+      position: absolute; top: 0; left: 0; bottom: 0;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 1s ease;
+    }
+
+    /* HOW IT WORKS */
+    .section {
+      padding: 100px 40px;
+      position: relative; z-index: 1;
+    }
+
+    .section-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 30px; height: 1px;
+      background: var(--accent);
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      max-width: 600px;
+      margin-bottom: 60px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      max-width: 1100px;
+    }
+
+    .step {
+      background: var(--bg);
+      padding: 40px 32px;
+      position: relative;
+    }
+
+    .step-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 4rem; font-weight: 800;
+      color: rgba(0,255,136,0.08);
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .step-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .step-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* PRICING */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .price-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 40px 32px;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .price-card.featured {
+      border-color: var(--accent);
+      background: rgba(0,255,136,0.03);
+    }
+
+    .price-card.featured::after {
+      content: 'POPULAIRE';
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--accent);
+      color: #000;
+      padding: 4px 16px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+
+    .price-name {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .price-amount {
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem; font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 4px;
+    }
+
+    .price-amount span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    .price-period {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    .price-features {
+      list-style: none;
+      margin-bottom: 32px;
+    }
+
+    .price-features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.78rem;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .price-features li::before {
+      content: '→';
+      color: var(--accent);
+      font-size: 0.7rem;
+    }
+
+    .btn-price {
+      width: 100%;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 14px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .price-card.featured .btn-price {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    .btn-price:hover {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    /* EMAIL CAPTURE */
+    .capture-section {
+      padding: 80px 40px;
+      position: relative; z-index: 1;
+    }
+
+    .capture-box {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 60px;
+      text-align: center;
+      position: relative;
+    }
+
+    .capture-box::before {
+      content: '';
+      position: absolute; inset: -1px;
+      background: linear-gradient(135deg, rgba(0,255,136,0.2), transparent, rgba(255,51,102,0.1));
+      z-index: -1;
+    }
+
+    .capture-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem; font-weight: 800;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .capture-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+
+    .email-form {
+      display: flex; gap: 0;
+    }
+
+    .email-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-right: none;
+      padding: 14px 18px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .email-input:focus { border-color: var(--accent); }
+    .email-input::placeholder { color: var(--muted); }
+
+    .btn-submit {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 14px 24px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-submit:hover { background: #fff; }
+
+    /* FOOTER */
+    footer {
+      padding: 40px;
+      border-top: 1px solid var(--border);
+      position: relative; z-index: 1;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 20px;
+    }
+
+    .footer-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    footer p {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in { animation: fadeInUp 0.6s ease both; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 100px 20px 60px; }
+      .section { padding: 60px 20px; }
+      .capture-box { padding: 32px 24px; }
+      .email-form { flex-direction: column; }
+      .email-input { border-right: 1px solid var(--border); border-bottom: none; }
+    }
+
+    /* SCROLL ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    GhostSignal
+  </div>
+  <div class="nav-links">
+    <a href="#how">Comment ça marche</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/signup.html" class="btn-nav">Démarrer</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <div class="live-dot"></div>
+    Radar IA actif · 12 740 trends analysées aujourd'hui
+  </div>
+
+  <h1>
+    Détecte les trends<br />
+    <span class="highlight">avant qu'elles</span><br />
+    explosent
+  </h1>
+
+  <p class="hero-sub">
+    GhostSignal analyse en temps réel TikTok, Instagram et YouTube Shorts
+    pour t'envoyer les tendances virales <strong>avant</strong> tout le monde.
+    Scripts inclus. Hashtags inclus.
+  </p>
+
+  <div class="hero-cta">
+    <a href="/signup.html" class="btn-primary">Commencer gratuitement →</a>
+    <a href="#how" class="btn-secondary">Voir comment ça marche</a>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-item">
+      <span class="ticker-num" data-target="48">0</span>
+      <span class="ticker-label">heures d'avance</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-num" data-target="94">0</span>
+      <span class="ticker-label">% de précision</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-num" data-target="3200">0</span>
+      <span class="ticker-label">créateurs actifs</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-num" data-target="7">0</span>
+      <span class="ticker-label">plateformes monitorées</span>
+    </div>
+  </div>
+</section>
+
+<!-- SIGNAL PREVIEW -->
+<section class="signal-preview">
+  <p class="preview-title">⚡ Signaux viraux détectés maintenant</p>
+  <div class="signals-grid">
+
+    <div class="signal-card reveal">
+      <div class="signal-header">
+        <span class="signal-platform">TikTok · Fitness</span>
+        <span class="signal-score">94</span>
+      </div>
+      <div class="signal-name">POV: 30 Day Transformation</div>
+      <div class="signal-desc">Format before/after avec overlay texte. Croissance +340% en 18h. Niche fitness/glow-up.</div>
+      <div class="signal-tags">
+        <span class="tag">#transformation</span>
+        <span class="tag">#30days</span>
+        <span class="tag">#fitness</span>
+      </div>
+      <div class="signal-velocity">
+        <span>Vélocité</span>
+        <div class="velocity-bar"><div class="velocity-fill" style="width: 94%"></div></div>
+        <span>94%</span>
+      </div>
+    </div>
+
+    <div class="signal-card reveal" style="transition-delay: 0.1s">
+      <div class="signal-header">
+        <span class="signal-platform">Instagram · Business</span>
+        <span class="signal-score">87</span>
+      </div>
+      <div class="signal-name">Silent vlog · CEO morning</div>
+      <div class="signal-desc">Vlog silencieux routine matinale business. Audio lo-fi. Croissance +280% sur Reels.</div>
+      <div class="signal-tags">
+        <span class="tag">#ceolife</span>
+        <span class="tag">#morningroutine</span>
+        <span class="tag">#silent</span>
+      </div>
+      <div class="signal-velocity">
+        <span>Vélocité</span>
+        <div class="velocity-bar"><div class="velocity-fill" style="width: 87%"></div></div>
+        <span>87%</span>
+      </div>
+    </div>
+
+    <div class="signal-card reveal" style="transition-delay: 0.2s">
+      <div class="signal-header">
+        <span class="signal-platform">YouTube Shorts · Finance</span>
+        <span class="signal-score">76</span>
+      </div>
+      <div class="signal-name">Crypto hidden gem #[n]</div>
+      <div class="signal-desc">Format "secret révélé" avec compteur. Tension narrative. Niches crypto & investissement.</div>
+      <div class="signal-tags">
+        <span class="tag">#crypto</span>
+        <span class="tag">#invest</span>
+        <span class="tag">#hiddenGem</span>
+      </div>
+      <div class="signal-velocity">
+        <span>Vélocité</span>
+        <div class="velocity-bar"><div class="velocity-fill" style="width: 76%"></div></div>
+        <span>76%</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <div class="section-label">Fonctionnement</div>
+    <h2 class="section-title">Ton radar de viralité en 4 étapes</h2>
+
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-title">Analyse en temps réel</div>
+        <div class="step-desc">Notre IA scrape en continu TikTok, Instagram, YouTube et Reddit — 24h/24, 7j/7. Plus de 50 000 vidéos analysées par heure.</div>
+      </div>
+      <div class="step reveal" style="transition-delay: 0.1s">
+        <div class="step-num">02</div>
+        <div class="step-title">Détection des micro-signaux</div>
+        <div class="step-desc">L'algorithme repère les patterns : vitesse de croissance anormale, répétition de formats, hashtags émergents entre plateformes.</div>
+      </div>
+      <div class="step reveal" style="transition-delay: 0.2s">
+        <div class="step-num">03</div>
+        <div class="step-title">Alerte virale</div>
+        <div class="step-desc">Tu reçois une alerte avec le score viral, la niche, les hashtags et le format exact à reproduire — avant que ça explose.</div>
+      </div>
+      <div class="step reveal" style="transition-delay: 0.3s">
+        <div class="step-num">04</div>
+        <div class="step-title">Script généré par IA</div>
+        <div class="step-desc">GhostSignal génère automatiquement le script, le hook, et les variantes selon ta niche. Tu postes. Tu cartonnes.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div style="max-width: 900px; margin: 0 auto; text-align: center;">
+    <div class="section-label" style="justify-content: center;">Pricing</div>
+    <h2 class="section-title" style="max-width: 100%; margin-bottom: 16px;">Simple. Transparent. Efficace.</h2>
+    <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 60px;">Sans engagement. Annule à tout moment.</p>
+
+    <div class="pricing-grid">
+
+      <div class="price-card reveal">
+        <div class="price-name">Starter</div>
+        <div class="price-amount">9<span>€</span></div>
+        <div class="price-period">/mois</div>
+        <ul class="price-features">
+          <li>5 tendances par semaine</li>
+          <li>Score viral</li>
+          <li>Hashtags inclus</li>
+          <li>1 niche</li>
+        </ul>
+        <button class="btn-price" onclick="window.location.href='/signup?plan=starter'">Commencer</button>
+      </div>
+
+      <div class="price-card featured reveal" style="transition-delay: 0.1s">
+        <div class="price-name">Creator</div>
+        <div class="price-amount">19<span>€</span></div>
+        <div class="price-period">/mois</div>
+        <ul class="price-features">
+          <li>Tendances illimitées</li>
+          <li>Scripts générés par IA</li>
+          <li>3 niches</li>
+          <li>Alertes email</li>
+          <li>Accès Discord privé</li>
+        </ul>
+        <button class="btn-price" onclick="window.location.href='/signup?plan=creator'">Commencer</button>
+      </div>
+
+      <div class="price-card reveal" style="transition-delay: 0.2s">
+        <div class="price-name">Pro</div>
+        <div class="price-amount">49<span>€</span></div>
+        <div class="price-period">/mois</div>
+        <ul class="price-features">
+          <li>Tout Creator +</li>
+          <li>Alertes temps réel</li>
+          <li>Niches illimitées</li>
+          <li>API access</li>
+          <li>Rapports hebdo IA</li>
+          <li>Support prioritaire</li>
+        </ul>
+        <button class="btn-price" onclick="window.location.href='/signup?plan=pro'">Commencer</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- EMAIL CAPTURE -->
+<section class="capture-section">
+  <div class="capture-box reveal">
+    <div class="hero-badge" style="margin: 0 auto 24px; display: inline-flex;">
+      <div class="live-dot"></div>
+      Accès bêta gratuit · Limité à 500 places
+    </div>
+    <h2 class="capture-title">Rejoins les créateurs<br />qui postent en premier</h2>
+    <p class="capture-sub">Reçois chaque semaine les 3 meilleures tendances virales détectées par GhostSignal, avant tout le monde. Gratuit.</p>
+    <div class="email-form">
+      <input type="email" class="email-input" placeholder="ton@email.com" id="emailInput" />
+      <button class="btn-submit" onclick="submitEmail()">Rejoindre →</button>
+    </div>
+    <p style="font-size: 0.65rem; color: var(--muted); margin-top: 12px;">✓ Sans spam · ✓ Sans CB · ✓ Désabonnement en 1 clic</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    <div class="logo-dot"></div>
+    GhostSignal AI
+  </div>
+  <p>© 2025 GhostSignal. Tous droits réservés.</p>
+  <p style="font-size: 0.65rem; color: var(--muted);">
+    <a href="/privacy" style="color: var(--muted); text-decoration: none;">Confidentialité</a> ·
+    <a href="/terms" style="color: var(--muted); text-decoration: none; margin-left: 8px;">CGU</a>
+  </p>
+</footer>
+
+<script>
+  // COUNTER ANIMATION
+  function animateCounter(el, target) {
+    let current = 0;
+    const increment = target / 60;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        el.textContent = target.toLocaleString('fr');
+        clearInterval(timer);
+      } else {
+        el.textContent = Math.floor(current).toLocaleString('fr');
+      }
+    }, 25);
+  }
+
+  // SCROLL REVEAL
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // COUNTER TRIGGER
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const nums = document.querySelectorAll('[data-target]');
+        nums.forEach(el => animateCounter(el, parseInt(el.dataset.target)));
+        counterObserver.disconnect();
+      }
+    });
+  });
+
+  const ticker = document.querySelector('.ticker');
+  if (ticker) counterObserver.observe(ticker);
+
+  // EMAIL SUBMIT
+  function submitEmail() {
+    const email = document.getElementById('emailInput').value;
+    if (!email || !email.includes('@')) {
+      alert('Entre une adresse email valide.');
+      return;
+    }
+    // Redirect to signup
+    window.location.href = `/signup?email=${encodeURIComponent(email)}`;
+  }
+
+  // Enter key for email
+  document.getElementById('emailInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') submitEmail();
+  });
+</script>
+</body>
+</html>
