@@ -161,8 +161,8 @@ app.post('/api/auth/signup', async (req, res) => {
       payment_method_types: ['card'],
       line_items: [{ price: planConfig.priceId, quantity: 1 }],
       mode: 'subscription',
-      success_url: `${process.env.FRONTEND_URL}/dashboard?signup=success`,
-      cancel_url: `${process.env.FRONTEND_URL}/signup?cancelled=true`,
+      success_url: `${process.env.FRONTEND_URL}/dashboard.html?signup=success`,
+      cancel_url: `${process.env.FRONTEND_URL}/signup.html?cancelled=true`,
       metadata: { userId, plan },
     });
 
@@ -540,3 +540,20 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
+// ============================================================
+// SCRAPER AUTOMATIQUE — toutes les 2h
+// ============================================================
+const { runScraper } = require('../jobs/scraper');
+
+// Lancer au démarrage
+setTimeout(() => {
+  runScraper().catch(console.error);
+}, 5000); // 5 secondes après le démarrage
+
+// Puis toutes les 2h
+setInterval(() => {
+  runScraper().catch(console.error);
+}, 2 * 60 * 60 * 1000);
+
+console.log('⏰ Scraper automatique activé (toutes les 2h)');
