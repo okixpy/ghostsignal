@@ -625,187 +625,202 @@
 
 <script>
   // ============================================================
-  // MOCK DATA — Replace with real Supabase API calls
+  // CONFIG
   // ============================================================
-  const TRENDS_DATA = [
-    {
-      id: 1, score: 96, platform: 'TikTok', niche: 'Fitness',
-      name: 'POV: 30 Day Glow Up Challenge',
-      desc: 'Format transformation before/after avec overlay texte. Croissance +340% en 18h. Niche fitness/beauté.',
-      hashtags: ['#glowup', '#transformation', '#30daychallenge', '#fitness', '#beforeafter'],
-      velocity: 96,
-      script: `HOOK (0-3 sec) :
-"Dans 30 jours, personne te reconnaîtra — voilà mon challenge..."
-
-INTRO (3-8 sec) :
-Tu vas me voir passer de [état actuel] à [état objectif]. Je filme tout.
-
-CORPS (8-35 sec) :
-Jour 1 : [action concrète]
-Jour 15 : [progression visible]
-Jour 30 : [résultat final choc]
-
-CTA (35-45 sec) :
-"Follow pour voir le résultat au jour 30 → je poste chaque semaine"`,
-    },
-    {
-      id: 2, score: 89, platform: 'Instagram', niche: 'Business',
-      name: 'Silent CEO Morning Vlog',
-      desc: 'Vlog silencieux routine matinale business. Audio lo-fi ambiant. Croissance +280% sur Reels cette semaine.',
-      hashtags: ['#ceolife', '#morningroutine', '#silentmotivation', '#entrepreneur', '#vlog'],
-      velocity: 89,
-      script: `HOOK (0-3 sec) :
-[Pas de parole — image : réveil 5h00, café, ambiance lo-fi]
-
-INTRO (3-8 sec) :
-[Texte overlay] : "Ma routine de CEO avant que le monde se réveille"
-
-CORPS (8-35 sec) :
-→ 5h00 : réveil [image]
-→ 5h15 : sport / méditation [image]
-→ 6h00 : travail deep focus [image]
-→ 7h30 : petit-déjeuner [image]
-
-CTA (35-45 sec) :
-[Texte overlay] : "Save for inspo → follow pour la suite"`,
-    },
-    {
-      id: 3, score: 82, platform: 'YouTube', niche: 'Finance',
-      name: 'Hidden Gem #[n] — Crypto/Invest',
-      desc: 'Format "secret révélé" avec compteur qui monte. Tension narrative maximale. Forte rétention.',
-      hashtags: ['#crypto', '#invest', '#passiveincome', '#hiddenGem', '#finance'],
-      velocity: 82,
-      script: `HOOK (0-3 sec) :
-"Ce crypto va x10 et 99% des gens ne le savent pas encore..."
-
-INTRO (3-8 sec) :
-J'analyse les marchés depuis 5 ans. Voilà le signal que je vois en ce moment.
-
-CORPS (8-35 sec) :
-Indicateur 1 : [donnée concrète]
-Indicateur 2 : [comparaison avec 2020/2021]
-Indicateur 3 : [catalyst potentiel]
-
-CTA (35-45 sec) :
-"Like si tu veux que je continue à partager ces analyses. Abonne-toi, je poste chaque lundi."`,
-    },
-    {
-      id: 4, score: 78, platform: 'TikTok', niche: 'Food',
-      name: '60-second Recipe Hack',
-      desc: 'Recette ultra-rapide filmée en accéléré. Format "satisfying". Très fort sur FR/BE/CA.',
-      hashtags: ['#recette', '#foodhack', '#recipe', '#cooking', '#tiktokfood'],
-      velocity: 78,
-      script: `HOOK (0-3 sec) :
-"La recette que tu cherches depuis toujours — en 60 secondes"
-
-INTRO (3-8 sec) :
-3 ingrédients. 60 secondes. Résultat incroyable.
-
-CORPS (8-35 sec) :
-Étape 1 → [action rapide + texte overlay]
-Étape 2 → [action rapide]
-Étape 3 → [résultat final satisfaisant]
-
-CTA (35-45 sec) :
-"Sauvegarde pour essayer ce week-end 🔖"`,
-    },
-    {
-      id: 5, score: 74, platform: 'Instagram', niche: 'Fashion',
-      name: 'Outfit Formula Reveal',
-      desc: '"Formula" outfit qui fonctionne toujours. Format éducatif + esthétique. Très fort sur les 18-28 ans.',
-      hashtags: ['#outfitformula', '#stylecheck', '#fashion', '#ootd', '#howtostyle'],
-      velocity: 74,
-      script: `HOOK (0-3 sec) :
-"La formula outfit que personne ne t'apprend mais qui marche à chaque fois"
-
-INTRO (3-8 sec) :
-Pièce statement + neutre + texture = combo parfait.
-
-CORPS (8-35 sec) :
-Pièce 1 : [description + pourquoi ça marche]
-Pièce 2 : [description + combinaison]
-Résultat : [look final avec overlay]
-
-CTA (35-45 sec) :
-"Save si utile → j'en poste une nouvelle chaque semaine"`,
-    },
-  ];
-
+  const API_BASE = window.location.origin;
   let currentFilter = 'all';
   let currentScript = null;
+  let TRENDS_DATA = [];
+
+  // ============================================================
+  // AUTH CHECK
+  // ============================================================
+  function checkAuth() {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) { window.location.href = '/signup.html'; return; }
+    document.getElementById('userName').textContent = user.name || user.email;
+    document.getElementById('userInitial').textContent = (user.name || user.email)[0].toUpperCase();
+    document.getElementById('userPlan').textContent = (user.plan || 'starter').toUpperCase();
+
+    // Show upgrade banner for starter
+    if (!user.plan || user.plan === 'starter') {
+      document.getElementById('upgradeBanner').style.display = 'flex';
+    }
+
+    // Hide script button for starter
+    if (user.plan === 'starter') {
+      document.querySelectorAll('.btn-script').forEach(b => {
+        b.textContent = '🔒 Creator+';
+        b.style.background = 'var(--border)';
+        b.style.color = 'var(--muted)';
+        b.onclick = (e) => { e.stopPropagation(); window.location.href = '/subscription.html'; };
+      });
+    }
+    return user;
+  }
+
+  // ============================================================
+  // LOAD TRENDS FROM API
+  // ============================================================
+  async function loadTrends(platform = 'all') {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) return;
+
+    const list = document.getElementById('trendsList');
+    list.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted);font-size:0.8rem;">⚡ Chargement des signaux...</div>';
+
+    try {
+      let url = `${API_BASE}/api/trends?limit=50`;
+      if (platform !== 'all') url += `&platform=${platform}`;
+
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+
+      if (!res.ok) throw new Error('Erreur API');
+      const data = await res.json();
+
+      TRENDS_DATA = data.trends || [];
+
+      // Update stats
+      document.getElementById('statSignals').textContent = TRENDS_DATA.length;
+      if (TRENDS_DATA.length > 0) {
+        const avgScore = Math.round(TRENDS_DATA.reduce((s, t) => s + t.viral_score, 0) / TRENDS_DATA.length);
+        document.getElementById('statScore').textContent = avgScore;
+      }
+
+      // Show plan limit warning
+      if (data.meta?.plan === 'starter' && TRENDS_DATA.length >= 5) {
+        list.insertAdjacentHTML('beforebegin', `
+          <div style="background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.2);padding:12px 16px;margin-bottom:16px;font-size:0.75rem;color:var(--accent2);">
+            ⚠ Plan Starter : limité à 5 tendances. <a href="/subscription.html" style="color:var(--accent);text-decoration:none;">Upgrader →</a>
+          </div>
+        `);
+      }
+
+      renderTrends(TRENDS_DATA);
+
+    } catch (err) {
+      // Fallback to demo data if API fails
+      TRENDS_DATA = getDemoTrends();
+      renderTrends(TRENDS_DATA);
+    }
+  }
+
+  // ============================================================
+  // DEMO DATA (fallback si API indisponible)
+  // ============================================================
+  function getDemoTrends() {
+    return [
+      { id: '1', viral_score: 96, platform: 'TikTok', niche: 'Fitness', name: 'POV: 30 Day Glow Up Challenge', description: 'Format transformation before/after. Croissance +340% en 18h.', hashtags: ['#glowup','#transformation','#fitness'], velocity_percent: 96 },
+      { id: '2', viral_score: 89, platform: 'Instagram', niche: 'Business', name: 'Silent CEO Morning Vlog', description: 'Vlog silencieux routine matinale. Audio lo-fi. +280% sur Reels.', hashtags: ['#ceolife','#morningroutine','#entrepreneur'], velocity_percent: 89 },
+      { id: '3', viral_score: 82, platform: 'YouTube', niche: 'Finance', name: 'Hidden Gem Crypto Reveal', description: 'Format secret révélé avec compteur. Tension narrative maximale.', hashtags: ['#crypto','#invest','#hiddenGem'], velocity_percent: 82 },
+      { id: '4', viral_score: 78, platform: 'TikTok', niche: 'Football', name: 'But incroyable du week-end', description: 'Compilation buts + réactions. Très fort sur FR/BE.', hashtags: ['#football','#but','#ligue1'], velocity_percent: 78 },
+      { id: '5', viral_score: 74, platform: 'Instagram', niche: 'Fashion', name: 'Outfit Formula Reveal', description: 'Formula outfit qui marche toujours. Éducatif + esthétique.', hashtags: ['#outfitformula','#fashion','#ootd'], velocity_percent: 74 },
+    ];
+  }
 
   // ============================================================
   // RENDER TRENDS
   // ============================================================
-  function renderTrends(filter = 'all') {
+  function renderTrends(trends) {
     const list = document.getElementById('trendsList');
-    const filtered = filter === 'all'
-      ? TRENDS_DATA
-      : TRENDS_DATA.filter(t => t.platform.toLowerCase() === filter);
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    const isPro = user?.plan === 'pro';
+    const isCreator = user?.plan === 'creator' || isPro;
 
-    if (filtered.length === 0) {
-      list.innerHTML = '<div class="empty-state" style="display:block;"><div class="empty-icon">📡</div><div class="empty-title">Aucun signal dans cette catégorie</div><div class="empty-desc">Essaie un autre filtre ou reviens plus tard.</div></div>';
+    if (!trends || trends.length === 0) {
+      list.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted);font-size:0.8rem;">📡 Aucun signal détecté pour ce filtre.</div>';
       return;
     }
 
-    list.innerHTML = filtered.map(t => `
-      <div class="trend-card" onclick="openScript(${t.id})">
+    list.innerHTML = trends.map(t => `
+      <div class="trend-card" onclick="openScript('${t.id}')">
         <div class="score-circle">
-          <span class="score-num">${t.score}</span>
+          <span class="score-num">${t.viral_score}</span>
           <span class="score-label">VIRAL</span>
         </div>
         <div class="trend-info">
           <div class="trend-meta">
             <span class="platform-tag">${t.platform}</span>
-            <span class="niche-tag">${t.niche}</span>
+            <span class="niche-tag">${t.niche || ''}</span>
+            ${isPro && t.is_real_time ? '<span style="font-size:0.55rem;color:var(--accent);border:1px solid rgba(0,255,136,0.3);padding:2px 6px;">⚡ LIVE</span>' : ''}
           </div>
           <div class="trend-name">${t.name}</div>
-          <div class="trend-desc">${t.desc}</div>
+          <div class="trend-desc">${t.description || ''}</div>
           <div class="trend-hashtags">
-            ${t.hashtags.slice(0,3).map(h => `<span class="hashtag">${h}</span>`).join('')}
+            ${(t.hashtags || []).slice(0,3).map(h => `<span class="hashtag">${h}</span>`).join('')}
           </div>
           <div class="trend-velocity">
             <span>Vélocité</span>
-            <div class="vel-bar"><div class="vel-fill" style="width:${t.velocity}%"></div></div>
-            <span>${t.velocity}%</span>
+            <div class="vel-bar"><div class="vel-fill" style="width:${t.velocity_percent || t.viral_score}%"></div></div>
+            <span>${t.velocity_percent || t.viral_score}%</span>
           </div>
         </div>
         <div class="trend-actions">
-          <button class="btn-script" onclick="event.stopPropagation(); openScript(${t.id})">Script IA →</button>
-          <button class="btn-save" onclick="event.stopPropagation(); saveAlert(${t.id})">★ Sauver</button>
+          ${isCreator
+            ? `<button class="btn-script" onclick="event.stopPropagation(); openScript('${t.id}')">Script IA →</button>`
+            : `<button class="btn-script" style="background:var(--border);color:var(--muted)" onclick="event.stopPropagation(); window.location.href='/subscription.html'">🔒 Creator+</button>`
+          }
+          <button class="btn-save" onclick="event.stopPropagation(); saveTrend('${t.id}')">★ Sauver</button>
         </div>
       </div>
     `).join('');
   }
 
-  function setFilter(btn, filter) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentFilter = filter;
-    renderTrends(filter);
-  }
+  // ============================================================
+  // OPEN SCRIPT MODAL
+  // ============================================================
+  async function openScript(id) {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) return;
 
-  // ============================================================
-  // SCRIPT MODAL
-  // ============================================================
-  function openScript(id) {
-    const trend = TRENDS_DATA.find(t => t.id === id);
+    // Starter can't generate scripts
+    if (!user.plan || user.plan === 'starter') {
+      window.location.href = '/subscription.html';
+      return;
+    }
+
+    const trend = TRENDS_DATA.find(t => t.id == id || t.id === id);
     if (!trend) return;
-    currentScript = trend.script;
 
     document.getElementById('modalTrendName').textContent = trend.name;
-    document.getElementById('scriptContent').textContent = trend.script;
-    document.getElementById('modalHashtags').innerHTML = trend.hashtags
+    document.getElementById('scriptContent').textContent = '⚡ Génération du script en cours...';
+    document.getElementById('modalHashtags').innerHTML = (trend.hashtags || [])
       .map(h => `<span style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);padding:4px 10px;font-size:0.65rem;color:var(--accent);">${h}</span>`)
       .join('');
-
     document.getElementById('scriptModal').classList.add('open');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/trends/${id}/script?niche=${trend.niche || ''}`, {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+      const data = await res.json();
+      currentScript = data.script || genFallbackScript(trend.name, trend.niche);
+      document.getElementById('scriptContent').textContent = currentScript;
+    } catch (err) {
+      currentScript = genFallbackScript(trend.name, trend.niche);
+      document.getElementById('scriptContent').textContent = currentScript;
+    }
   }
 
-  function closeModal() {
-    document.getElementById('scriptModal').classList.remove('open');
+  function genFallbackScript(name, niche) {
+    return `HOOK (0-3 sec) :
+"Personne ne te dit ça sur ${name} — et c'est pour ça tu stagne..."
+
+INTRO (3-8 sec) :
+Voilà ce que j'ai découvert après avoir analysé 1000 vidéos en ${niche || 'cette niche'}.
+
+CORPS (8-35 sec) :
+Point 1 : Le secret des créateurs qui explosent → [action concrète]
+Point 2 : Ce que tout le monde fait mal → [erreur commune + solution]
+Point 3 : La technique qui change tout → [révélation]
+
+CTA (35-45 sec) :
+"Sauvegarde cette vidéo et reviens me dire dans 30 jours. Follow pour la suite →"`;
   }
 
+  function closeModal() { document.getElementById('scriptModal').classList.remove('open'); }
   function copyScript() {
     if (!currentScript) return;
     navigator.clipboard.writeText(currentScript).then(() => {
@@ -815,11 +830,31 @@ CTA (35-45 sec) :
     });
   }
 
-  function saveAlert(id) {
-    const btn = event.target;
-    btn.textContent = '★ Sauvé';
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.color = 'var(--accent)';
+  // ============================================================
+  // SAVE TREND
+  // ============================================================
+  async function saveTrend(id) {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) return;
+    try {
+      await fetch(`${API_BASE}/api/trends/${id}/save`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+      // Update saved count
+      const count = parseInt(document.getElementById('statSaved').textContent || '0') + 1;
+      document.getElementById('statSaved').textContent = count;
+    } catch (err) {}
+  }
+
+  // ============================================================
+  // FILTERS
+  // ============================================================
+  function setFilter(btn, filter) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = filter;
+    loadTrends(filter);
   }
 
   // Close modal on overlay click
@@ -827,34 +862,14 @@ CTA (35-45 sec) :
     if (e.target === document.getElementById('scriptModal')) closeModal();
   });
 
-  // ============================================================
-  // AUTH CHECK (Simple — replace with Supabase auth)
-  // ============================================================
-  function checkAuth() {
-    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
-    if (!user) {
-      window.location.href = '/signup.html';
-      return;
-    }
-    document.getElementById('userName').textContent = user.name || user.email;
-    document.getElementById('userInitial').textContent = (user.name || user.email)[0].toUpperCase();
-    document.getElementById('userPlan').textContent = user.plan || 'Starter';
-
-    if (user.plan === 'starter') {
-      document.getElementById('upgradeBanner').style.display = 'flex';
-    }
-  }
-
-  function logout() {
-    localStorage.removeItem('gs_user');
-    window.location.href = '/';
-  }
+  function logout() { localStorage.removeItem('gs_user'); window.location.href = '/'; }
 
   // ============================================================
   // INIT
   // ============================================================
   checkAuth();
-  renderTrends();
+  loadTrends();
 </script>
+
 </body>
 </html>
