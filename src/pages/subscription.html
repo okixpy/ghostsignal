@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GhostSignal · Abonnement</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050507;
+      --surface: #0d0d12;
+      --border: #1a1a2e;
+      --accent: #00ff88;
+      --accent2: #ff3366;
+      --accent3: #7c3aed;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 240px; min-height: 100vh;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 24px 0; display: flex; flex-direction: column;
+      position: fixed; left: 0; top: 0; bottom: 0; z-index: 50;
+    }
+    .sidebar-logo {
+      padding: 0 24px 32px;
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.5)} }
+    .sidebar-nav { padding: 24px 0; flex: 1; }
+    .nav-section { padding: 0 16px; margin-bottom: 8px; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 24px; font-size: 0.78rem; color: var(--muted); text-decoration: none; cursor: pointer; transition: all 0.2s; border-left: 2px solid transparent; }
+    .nav-item:hover, .nav-item.active { color: var(--text); background: rgba(255,255,255,0.03); border-left-color: var(--accent); }
+    .nav-item.active { color: var(--accent); }
+    .sidebar-footer { padding: 24px; border-top: 1px solid var(--border); }
+    .user-avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent3)); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.8rem; color: #000; }
+    .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .user-name { font-size: 0.75rem; font-weight: 700; }
+    .user-plan { font-size: 0.6rem; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .main { margin-left: 240px; flex: 1; }
+    .topbar { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); position: sticky; top: 0; z-index: 40; }
+    .topbar-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
+    .content { padding: 32px; max-width: 800px; }
+
+    .current-plan {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 32px; margin-bottom: 32px; position: relative;
+    }
+    .current-plan::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); }
+    .plan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .plan-label { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .plan-name-big { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; }
+    .plan-status { display: flex; align-items: center; gap: 6px; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    .plan-price-display { font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800; color: var(--accent); }
+    .plan-price-display span { font-size: 1rem; color: var(--muted); }
+
+    .plan-features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+    .feature-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--muted); }
+    .feature-item::before { content: '✓'; color: var(--accent); }
+
+    .btn-portal {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border); padding: 12px 24px;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-portal:hover { border-color: var(--accent); color: var(--accent); }
+
+    .section-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+
+    .plans-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+    .plan-card { background: var(--surface); border: 1px solid var(--border); padding: 24px; transition: all 0.2s; }
+    .plan-card.current { border-color: var(--accent); background: rgba(0,255,136,0.03); }
+    .plan-card.current::after { content: 'ACTUEL'; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #000; padding: 2px 12px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.2em; }
+    .plan-card { position: relative; }
+    .plan-card-name { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .plan-card-price { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; margin-bottom: 4px; }
+    .plan-card-price span { font-size: 0.8rem; color: var(--muted); }
+    .plan-card-features { list-style: none; margin: 16px 0; }
+    .plan-card-features li { font-size: 0.7rem; color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
+    .plan-card-features li::before { content: '→'; color: var(--accent); }
+    .btn-upgrade { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+    .btn-upgrade:hover { background: #fff; }
+    .btn-current { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: default; margin-top: 8px; }
+
+    .billing-section { background: var(--surface); border: 1px solid var(--border); padding: 24px; }
+    .billing-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+    .billing-row:last-child { border-bottom: none; }
+    .billing-label { color: var(--muted); }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .plans-grid { grid-template-columns: 1fr; }
+      .plan-features { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-dot"></div>GhostSignal</div>
+  <nav class="sidebar-nav">
+    <div class="nav-section" style="margin-top:16px">Analyse</div>
+    <a class="nav-item" href="/dashboard.html"><span>⚡</span> Signaux viraux</a>
+    <a class="nav-item" href="#"><span>★</span> Sauvegardés</a>
+    <a class="nav-item" href="#"><span>✦</span> Mes scripts</a>
+    <div class="nav-section" style="margin-top:24px">Paramètres</div>
+    <a class="nav-item" href="#"><span>◎</span> Mes niches</a>
+    <a class="nav-item" href="#"><span>◉</span> Alertes</a>
+    <a class="nav-item active" href="/subscription.html"><span>◈</span> Abonnement</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar" id="userInitial">U</div>
+      <div><div class="user-name" id="userName">Utilisateur</div><div class="user-plan" id="userPlan">Creator</div></div>
+    </div>
+    <button onclick="logout()" style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px;font-family:Space Mono,monospace;font-size:0.7rem;cursor:pointer;">Déconnexion</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title">Abonnement</span>
+  </div>
+
+  <div class="content">
+
+    <!-- PLAN ACTUEL -->
+    <div class="current-plan">
+      <div class="plan-header">
+        <div>
+          <div class="plan-label">Ton plan actuel</div>
+          <div class="plan-name-big" id="currentPlanName">Creator</div>
+          <div class="plan-status" style="margin-top:8px"><div class="status-dot"></div> Actif</div>
+        </div>
+        <div class="plan-price-display" id="currentPlanPrice">19<span>€/mois</span></div>
+      </div>
+
+      <div class="plan-features" id="currentFeatures">
+        <div class="feature-item">Tendances illimitées</div>
+        <div class="feature-item">Scripts générés par IA</div>
+        <div class="feature-item">3 niches</div>
+        <div class="feature-item">Alertes email</div>
+        <div class="feature-item">Accès Discord privé</div>
+      </div>
+
+      <button class="btn-portal" onclick="openPortal()">Gérer mon abonnement →</button>
+    </div>
+
+    <!-- CHANGER DE PLAN -->
+    <div class="section-title">Changer de plan</div>
+    <div class="plans-grid">
+
+      <div class="plan-card" id="cardStarter">
+        <div class="plan-card-name">Starter</div>
+        <div class="plan-card-price">9<span>€/mois</span></div>
+        <ul class="plan-card-features">
+          <li>5 tendances/semaine</li>
+          <li>Score viral</li>
+          <li>Hashtags inclus</li>
+          <li>1 niche</li>
+        </ul>
+        <button class="btn-upgrade" onclick="upgradePlan('starter')">Choisir Starter</button>
+      </div>
+
+      <div class="plan-card" id="cardCreator">
+        <div class="plan-card-name">Creator</div>
+        <div class="plan-card-price">19<span>€/mois</span></div>
+        <ul class="plan-card-features">
+          <li>Tendances illimitées</li>
+          <li>Scripts IA</li>
+          <li>3 niches</li>
+          <li>Alertes email</li>
+          <li>Discord privé</li>
+        </ul>
+        <button class="btn-upgrade" onclick="upgradePlan('creator')">Choisir Creator</button>
+      </div>
+
+      <div class="plan-card" id="cardPro">
+        <div class="plan-card-name">Pro</div>
+        <div class="plan-card-price">49<span>€/mois</span></div>
+        <ul class="plan-card-features">
+          <li>Tout Creator +</li>
+          <li>Alertes temps réel</li>
+          <li>Niches illimitées</li>
+          <li>API access</li>
+          <li>Support prioritaire</li>
+        </ul>
+        <button class="btn-upgrade" onclick="upgradePlan('pro')">Choisir Pro</button>
+      </div>
+
+    </div>
+
+    <!-- FACTURATION -->
+    <div class="section-title">Facturation</div>
+    <div class="billing-section">
+      <div class="billing-row">
+        <span class="billing-label">Prochain paiement</span>
+        <span id="nextPayment">—</span>
+      </div>
+      <div class="billing-row">
+        <span class="billing-label">Moyen de paiement</span>
+        <span>•••• •••• •••• ••••</span>
+      </div>
+      <div class="billing-row">
+        <span class="billing-label">Historique des factures</span>
+        <button class="btn-portal" style="padding:8px 16px;font-size:0.7rem" onclick="openPortal()">Voir les factures →</button>
+      </div>
+      <div class="billing-row">
+        <span class="billing-label" style="color:var(--accent2)">Annuler l'abonnement</span>
+        <button onclick="openPortal()" style="background:transparent;border:1px solid var(--accent2);color:var(--accent2);padding:8px 16px;font-family:Syne,sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;text-transform:uppercase;">Annuler →</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const PLANS_CONFIG = {
+    starter: { name: 'Starter', price: '9', features: ['5 tendances/semaine', 'Score viral', 'Hashtags inclus', '1 niche'] },
+    creator: { name: 'Creator', price: '19', features: ['Tendances illimitées', 'Scripts IA', '3 niches', 'Alertes email', 'Discord privé'] },
+    pro: { name: 'Pro', price: '49', features: ['Tout Creator +', 'Alertes temps réel', 'Niches illimitées', 'API access', 'Support prioritaire'] },
+  };
+
+  function checkAuth() {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) { window.location.href = '/signup.html'; return; }
+    document.getElementById('userName').textContent = user.name || user.email;
+    document.getElementById('userInitial').textContent = (user.name || user.email)[0].toUpperCase();
+    const plan = user.plan || 'starter';
+    document.getElementById('userPlan').textContent = plan;
+
+    // Afficher plan actuel
+    const config = PLANS_CONFIG[plan];
+    if (config) {
+      document.getElementById('currentPlanName').textContent = config.name;
+      document.getElementById('currentPlanPrice').innerHTML = `${config.price}<span>€/mois</span>`;
+      document.getElementById('currentFeatures').innerHTML = config.features
+        .map(f => `<div class="feature-item">${f}</div>`).join('');
+    }
+
+    // Marquer le plan actuel
+    document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('current'));
+    const card = document.getElementById('card' + plan.charAt(0).toUpperCase() + plan.slice(1));
+    if (card) {
+      card.classList.add('current');
+      card.querySelector('button').className = 'btn-current';
+      card.querySelector('button').textContent = 'Plan actuel';
+    }
+
+    // Prochain paiement
+    const next = new Date();
+    next.setMonth(next.getMonth() + 1);
+    document.getElementById('nextPayment').textContent = next.toLocaleDateString('fr-FR');
+  }
+
+  async function upgradePlan(plan) {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) return;
+    try {
+      const res = await fetch('/api/subscription/upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+    } catch (err) {
+      alert('Erreur: ' + err.message);
+    }
+  }
+
+  async function openPortal() {
+    const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
+    if (!user) return;
+    try {
+      const res = await fetch('/api/subscription/portal', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${user.token}` },
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      alert('Erreur: ' + err.message);
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('gs_user');
+    window.location.href = '/';
+  }
+
+  checkAuth();
+</script>
+</body>
+</html>
