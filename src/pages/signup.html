@@ -499,7 +499,7 @@
 
       localStorage.setItem('gs_user', JSON.stringify(data.user));
       showSuccess('Connexion réussie ! Redirection...');
-      setTimeout(() => window.location.href = '/dashboard', 1000);
+      setTimeout(() => window.location.href = '/dashboard.html', 1000);
 
     } catch (err) {
       showError(err.message);
