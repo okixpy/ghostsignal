@@ -492,7 +492,7 @@
 
   <nav class="sidebar-nav">
     <div class="nav-section" style="margin-top: 16px;">Analyse</div>
-    <a class="nav-item active" href="/dashboard">
+    <a class="nav-item active" href="/dashboard.html">
       <span class="nav-icon">⚡</span> Signaux viraux
     </a>
     <a class="nav-item" href="/dashboard/saved">
@@ -547,7 +547,7 @@
       <div class="upgrade-text">
         Tu utilises le plan <strong>Starter</strong> (5 trends/semaine). Passe à <strong>Creator</strong> pour des tendances illimitées + scripts IA.
       </div>
-      <button class="btn-upgrade" onclick="window.location.href='/dashboard/subscription'">Upgrader →</button>
+      <button class="btn-upgrade" onclick="window.location.href='#'">Upgrader →</button>
     </div>
 
     <!-- STATS -->
@@ -833,7 +833,7 @@ CTA (35-45 sec) :
   function checkAuth() {
     const user = JSON.parse(localStorage.getItem('gs_user') || 'null');
     if (!user) {
-      window.location.href = '/signin';
+      window.location.href = '/signup.html';
       return;
     }
     document.getElementById('userName').textContent = user.name || user.email;
