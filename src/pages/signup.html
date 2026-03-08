@@ -465,7 +465,7 @@
         // Store user session
         localStorage.setItem('gs_user', JSON.stringify({ name, email, plan: selectedPlan, token: data.token }));
         showSuccess('Compte créé ! Redirection...');
-        setTimeout(() => window.location.href = '/dashboard', 1200);
+        setTimeout(() => window.location.href = '/dashboard.html', 1200);
       }
 
     } catch (err) {
